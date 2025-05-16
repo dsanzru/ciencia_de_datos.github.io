@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D3 + Scrollama Demo</title>
+
+  <!-- D3.js -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <!-- Scrollama -->
+  <script src="https://unpkg.com/scrollama"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      line-height: 1.6;
+    }
+    article {
+      display: flex;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 50px 20px;
+    }
+    .step {
+      margin: 0 0 200px 0;
+      padding: 20px;
+      border-left: 4px solid #ccc;
+    }
+    .step.is-active {
+      border-color: #007acc;
+      background: rgba(0, 122, 204, 0.1);
+    }
+    #graphic {
+      position: sticky;
+      top: 100px;
+      width: 100%;
+      height: 400px;
+      flex: 1;
+    }
+    svg {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+
+<article>
+  <div>
+    <section class="step" data-step="0">
+      <h2>Step 1: Initial View</h2>
+      <p>Here we start with a single circle in the center.</p>
+    </section>
+
+    <section class="step" data-step="1">
+      <h2>Step 2: Expand</h2>
+      <p>The circle grows and changes color.</p>
+    </section>
+
+    <section class="step" data-step="2">
+      <h2>Step 3: Bar Chart</h2>
+      <p>Now we morph into a simple bar chart.</p>
+    </section>
+  </div>
+
+  <div id="graphic">
+    <svg></svg>
+  </div>
+</article>
+
+<script>
+  // ===== Data =====
+  const barData = [30, 80, 45, 60, 20];
+
+  // ===== Setup SVG =====
+  const svg = d3.select("svg");
+  const width = +svg.node().clientWidth;
+  const height = +svg.node().clientHeight;
+  const centerX = width / 2;
+  const centerY = height / 2;
+
+  // Draw initial circle
+  const circle = svg.append("circle")
+    .attr("cx", centerX)
+    .attr("cy", centerY)
+    .attr("r", 50)
+    .attr("fill", "#007acc");
+
+  // ===== Scrollama setup =====
+  const scroller = scrollama();
+
+  function handleStepEnter(response) {
+    // remove active class on all
+    d3.selectAll(".step").classed("is-active", false);
+    // highlight current step
+    d3.select(response.element).classed("is-active", true);
+
+    const step = +response.element.getAttribute("data-step");
+
+    if (step === 0) {
+      // reset to circle
+      svg.selectAll("rect").remove();
+      circle
+        .transition().duration(600)
+        .attr("r", 50)
+        .attr("fill", "#007acc");
+    } else if (step === 1) {
+      // expand circle
+      circle
+        .transition().duration(600)
+        .attr("r", 100)
+        .attr("fill", "#e78ac3");
+    } else if (step === 2) {
+      // morph to bar chart
+      circle
+        .transition().duration(600)
+        .attr("r", 0);
+
+      // draw bars
+      const x = d3.scaleBand()
+        .domain(d3.range(barData.length))
+        .range([50, width - 50])
+        .padding(0.3);
+
+      const y = d3.scaleLinear()
+        .domain([0, d3.max(barData)])
+        .range([height - 50, 50]);
+
+      svg.selectAll("rect")
+        .data(barData)
+        .join("rect")
+        .attr("x", (d, i) => x(i))
+        .attr("y", height - 50)
+        .attr("width", x.bandwidth())
+        .attr("height", 0)
+        .attr("fill", "#66c2a5")
+      .transition().duration(800)
+        .attr("y", d => y(d))
+        .attr("height", d => height - 50 - y(d));
+    }
+  }
+
+  scroller
+    .setup({
+      step: ".step",
+      offset: 0.5,
+      debug: false
+    })
+    .onStepEnter(handleStepEnter);
+
+  // update on resize
+  window.addEventListener("resize", scroller.resize);
+</script>
+</body>
+</html>
