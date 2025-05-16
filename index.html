@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>D3 + Scrollama Demo</title>
+  <title>D3 + Scrollama Interactive Demo</title>
 
   <!-- D3.js -->
   <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -11,38 +11,13 @@
   <script src="https://unpkg.com/scrollama"></script>
 
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      line-height: 1.6;
-    }
-    article {
-      display: flex;
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 50px 20px;
-    }
-    .step {
-      margin: 0 0 200px 0;
-      padding: 20px;
-      border-left: 4px solid #ccc;
-    }
-    .step.is-active {
-      border-color: #007acc;
-      background: rgba(0, 122, 204, 0.1);
-    }
-    #graphic {
-      position: sticky;
-      top: 100px;
-      width: 100%;
-      height: 400px;
-      flex: 1;
-    }
-    svg {
-      width: 100%;
-      height: 100%;
-    }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; line-height: 1.6; }
+    article { display: flex; max-width: 1000px; margin: 0 auto; padding: 50px 20px; }
+    .step { margin: 0 0 200px 0; padding: 20px; border-left: 4px solid #ccc; }
+    .step.is-active { border-color: #007acc; background: rgba(0, 122, 204, 0.1); }
+    #graphic { position: sticky; top: 100px; width: 100%; height: 500px; flex: 1; }
+    svg { width: 100%; height: 100%; }
+    .tooltip { position: absolute; background: white; padding: 5px 10px; border: 1px solid #ccc; pointer-events: none; font-size: 12px; }
   </style>
 </head>
 <body>
@@ -50,108 +25,135 @@
 <article>
   <div>
     <section class="step" data-step="0">
-      <h2>Step 1: Initial View</h2>
-      <p>Here we start with a single circle in the center.</p>
+      <h2>Step 1: Introduction</h2>
+      <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
     </section>
 
     <section class="step" data-step="1">
-      <h2>Step 2: Expand</h2>
-      <p>The circle grows and changes color.</p>
+      <h2>Step 2: Circle Animation</h2>
+      <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
     </section>
 
     <section class="step" data-step="2">
       <h2>Step 3: Bar Chart</h2>
-      <p>Now we morph into a simple bar chart.</p>
+      <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+    </section>
+
+    <section class="step" data-step="3">
+      <h2>Step 4: Bubble Chart</h2>
+      <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+    </section>
+
+    <section class="step" data-step="4">
+      <h2>Step 5: Simple Bar Plot</h2>
+      <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+    </section>
+
+    <section class="step" data-step="5">
+      <h2>Step 6: Line Plot</h2>
+      <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
     </section>
   </div>
 
-  <div id="graphic">
-    <svg></svg>
-  </div>
+  <div id="graphic"><svg></svg><div class="tooltip" style="opacity:0;"></div></div>
 </article>
 
 <script>
-  // ===== Data =====
-  const barData = [30, 80, 45, 60, 20];
-
-  // ===== Setup SVG =====
   const svg = d3.select("svg");
   const width = +svg.node().clientWidth;
   const height = +svg.node().clientHeight;
-  const centerX = width / 2;
-  const centerY = height / 2;
-
-  // Draw initial circle
+  const centerX = width/2, centerY = height/2;
   const circle = svg.append("circle")
-    .attr("cx", centerX)
-    .attr("cy", centerY)
-    .attr("r", 50)
-    .attr("fill", "#007acc");
+    .attr("cx", centerX).attr("cy", centerY)
+    .attr("r", 50).attr("fill", "#007acc");
 
-  // ===== Scrollama setup =====
+  const barData = [30,80,45,60,20];
+  const bubbleData = d3.range(20).map(d => ({ x: Math.random()*width, y: Math.random()*height, r: Math.random()*20 + 5 }));
+  const simpleBar = [5,15,10,20,8,12];
+  const lineData = [
+    { name: 'A', values: [10,20,15,25,30] },
+    { name: 'B', values: [5,10,20,15,10]  },
+    { name: 'C', values: [15,5,10,20,25]  }
+  ];
+
+  const tooltip = d3.select('.tooltip');
   const scroller = scrollama();
 
   function handleStepEnter(response) {
-    // remove active class on all
-    d3.selectAll(".step").classed("is-active", false);
-    // highlight current step
-    d3.select(response.element).classed("is-active", true);
+    d3.selectAll('.step').classed('is-active', false);
+    d3.select(response.element).classed('is-active', true);
+    const step = +response.element.getAttribute('data-step');
+    svg.selectAll('*:not(defs)').remove();
+    tooltip.style('opacity',0);
 
-    const step = +response.element.getAttribute("data-step");
-
-    if (step === 0) {
-      // reset to circle
-      svg.selectAll("rect").remove();
-      circle
-        .transition().duration(600)
-        .attr("r", 50)
-        .attr("fill", "#007acc");
-    } else if (step === 1) {
-      // expand circle
-      circle
-        .transition().duration(600)
-        .attr("r", 100)
-        .attr("fill", "#e78ac3");
-    } else if (step === 2) {
-      // morph to bar chart
-      circle
-        .transition().duration(600)
-        .attr("r", 0);
-
-      // draw bars
-      const x = d3.scaleBand()
-        .domain(d3.range(barData.length))
-        .range([50, width - 50])
-        .padding(0.3);
-
-      const y = d3.scaleLinear()
-        .domain([0, d3.max(barData)])
-        .range([height - 50, 50]);
-
-      svg.selectAll("rect")
-        .data(barData)
-        .join("rect")
-        .attr("x", (d, i) => x(i))
-        .attr("y", height - 50)
-        .attr("width", x.bandwidth())
-        .attr("height", 0)
-        .attr("fill", "#66c2a5")
-      .transition().duration(800)
-        .attr("y", d => y(d))
-        .attr("height", d => height - 50 - y(d));
+    if(step===0) {
+      svg.append('text')
+        .attr('x', centerX).attr('y', centerY)
+        .attr('text-anchor','middle')
+        .attr('font-size', '24px')
+        .text('Welcome to the demo');
+    }
+    else if(step===1) {
+      circle.transition().duration(600)
+        .attr('r',100).attr('fill','#e78ac3');
+      svg.append(() => circle.node().cloneNode())
+        .transition().delay(600).duration(600)
+        .attr('r',50).attr('fill','#007acc');
+    }
+    else if(step===2) {
+      const x = d3.scaleBand().domain(d3.range(barData.length)).range([50,width-50]).padding(0.3);
+      const y = d3.scaleLinear().domain([0,d3.max(barData)]).range([height-50,50]);
+      svg.selectAll('rect').data(barData)
+        .join('rect')
+        .attr('x',(d,i)=>x(i)).attr('y',height-50)
+        .attr('width',x.bandwidth()).attr('height',0)
+        .attr('fill','#66c2a5')
+        .transition().duration(800)
+        .attr('y',d=>y(d)).attr('height',d=>height-50-y(d));
+    }
+    else if(step===3) {
+      svg.selectAll('circle').data(bubbleData)
+        .join('circle')
+        .attr('cx',d=>d.x).attr('cy',d=>d.y).attr('r',0)
+        .attr('fill','steelblue').attr('opacity',0.7)
+        .on('mouseover', (e,d)=>{
+          tooltip.style('opacity',1)
+            .html(`r: ${d.r.toFixed(1)}`)
+            .style('left', `${e.pageX+5}px`).style('top', `${e.pageY-5}px`);
+        }).on('mouseout', ()=>tooltip.style('opacity',0))
+        .transition().delay((d,i)=>i*50).duration(500)
+        .attr('r',d=>d.r);
+    }
+    else if(step===4) {
+      const x = d3.scaleBand().domain(d3.range(simpleBar.length)).range([50,width-50]).padding(0.2);
+      const y = d3.scaleLinear().domain([0,d3.max(simpleBar)]).range([height-50,50]);
+      svg.selectAll('rect').data(simpleBar)
+        .join('rect')
+        .attr('x',(d,i)=>x(i)).attr('y',height)
+        .attr('width',x.bandwidth()).attr('height',0)
+        .attr('fill','#fc8d62')
+        .transition().duration(800)
+        .attr('y',d=>y(d)).attr('height',d=>height-50-y(d));
+    }
+    else if(step===5) {
+      const x = d3.scalePoint().domain(d3.range(lineData[0].values.length)).range([50,width-50]);
+      const y = d3.scaleLinear().domain([0, d3.max(lineData.flatMap(d=>d.values))]).range([height-50,50]);
+      const line = d3.line().x((d,i)=>x(i)).y(d=>y(d));
+      svg.selectAll('.line').data(lineData)
+        .join('path')
+        .attr('class','line')
+        .attr('fill','none').attr('stroke-width',2)
+        .attr('stroke',(d,i)=>d3.schemeCategory10[i])
+        .attr('d',d=>line(d.values))
+        .attr('stroke-dasharray', function(){return this.getTotalLength();})
+        .attr('stroke-dashoffset', function(){return this.getTotalLength();})
+        .transition().duration(2000)
+        .attr('stroke-dashoffset',0);
     }
   }
 
-  scroller
-    .setup({
-      step: ".step",
-      offset: 0.5,
-      debug: false
-    })
-    .onStepEnter(handleStepEnter);
-
-  // update on resize
-  window.addEventListener("resize", scroller.resize);
+  scroller.setup({ step: '.step', offset: 0.6, debug: false }).onStepEnter(handleStepEnter);
+  window.addEventListener('resize', scroller.resize);
 </script>
 </body>
 </html>
